@@ -1,11 +1,10 @@
 (function() {
     'use strict';
 
-    // Имя ключа для хранения
-    var storage_key = 'hide_shots_enabled';
+    var storage_key = 'plugin_shots_enabled';
     var interval_id = null;
 
-    // Функции ES5
+    // Скрыть кнопки
     function hideShots() {
         var buttons = document.querySelectorAll('.card__shots');
         for (var i = 0; i < buttons.length; i++) {
@@ -13,6 +12,7 @@
         }
     }
 
+    // Показать кнопки
     function showShots() {
         var buttons = document.querySelectorAll('.card__shots');
         for (var i = 0; i < buttons.length; i++) {
@@ -20,62 +20,61 @@
         }
     }
 
+    // Применить текущий флаг
     function applyFlag(enabled) {
-        try {
-            if (interval_id) clearInterval(interval_id);
-            if (enabled) {
-                hideShots();
-                interval_id = setInterval(function() {
-                    try {
-                        hideShots();
-                    } catch(e) {}
-                }, 1000);
-            } else {
-                showShots();
-            }
-        } catch(e) {}
+        if (interval_id) clearInterval(interval_id);
+
+        if (enabled) {
+            hideShots();
+            interval_id = setInterval(function() {
+                try { hideShots(); } catch(e) {}
+            }, 500);
+            console.log('[Shots] hidden');
+        } else {
+            showShots();
+            console.log('[Shots] visible');
+        }
     }
 
-    function safeInit() {
+    // Инициализация настроек
+    function initSettings() {
         try {
             if (!window.Lampa || !Lampa.Settings || !Lampa.Storage) {
-                // Если ещё не готово, пробуем через 500 мс
-                setTimeout(safeInit, 500);
+                setTimeout(initSettings, 500);
                 return;
             }
 
+            // Состояние
             var enabled = Lampa.Storage.get(storage_key, false);
 
-            // Добавляем пункт в меню
-            try {
-                Lampa.Settings.add({
-                    title: 'Удалять Shots',
-                    type: 'toggle',
-                    default: false,
-                    onChange: function(value) {
-                        try {
-                            Lampa.Storage.set(storage_key, value);
-                            applyFlag(value);
-                        } catch(e) {}
-                    }
-                });
-            } catch(e) {}
+            // Новый пункт в основном меню Настроек
+            Lampa.Settings.add({
+                title: 'Shots',
+                type: 'select',
+                default: enabled ? 'Да' : 'Нет',
+                options: ['Да','Нет'],
+                onChange: function(value) {
+                    var flag = value === 'Да';
+                    Lampa.Storage.set(storage_key, flag);
+                    applyFlag(flag);
+                }
+            });
 
             // Применяем текущее значение
             applyFlag(enabled);
 
-            console.log('[HideShots] plugin loaded');
+            console.log('[Shots] plugin loaded');
         } catch(e) {
-            console.error('[HideShots] init error', e);
+            console.error('[Shots] init error', e);
         }
     }
 
-    // Ждём lampa:ready
+    // Ждём Lampa
     if (window.Lampa) {
-        setTimeout(safeInit, 500);
+        setTimeout(initSettings, 500);
     } else {
         document.addEventListener('lampa:ready', function() {
-            setTimeout(safeInit, 500);
+            setTimeout(initSettings, 500);
         });
     }
 
