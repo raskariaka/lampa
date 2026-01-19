@@ -2,7 +2,7 @@
     'use strict';
 
     function init() {
-        window.plugin_shots_ready = false;
+        window.plugin_shots_ready = true;
         console.log('[ShotsReady] plugin_shots_ready = false');
     }
 
