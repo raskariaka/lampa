@@ -4,51 +4,55 @@
     var storage_key = 'plugin_shots_enabled';
     var observer = null;
 
-    // Скрытие/показ кнопок Shots
-    function updateShots(enabled) {
+    // Удаляем кнопки Shots из DOM
+    function removeShots() {
         var buttons = document.querySelectorAll('.card__shots');
         for (var i = 0; i < buttons.length; i++) {
-            buttons[i].style.display = enabled ? 'none' : '';
+            var btn = buttons[i];
+            if (btn && btn.parentNode) {
+                btn.parentNode.removeChild(btn);
+            }
         }
     }
 
-    // Следим за динамически подгружаемыми карточками
+    // Следим за новыми карточками
     function observeShots(enabled) {
         if(observer) observer.disconnect();
 
         observer = new MutationObserver(function(){
-            updateShots(enabled);
+            if(enabled) removeShots();
         });
 
         observer.observe(document.body, { childList: true, subtree: true });
     }
 
-    // Установка флага для кнопок
+    // Применяем флаг
     function applyFlag(enabled) {
-        updateShots(enabled);
-        observeShots(enabled);
         window.plugin_shots_ready = !enabled; // true → показываем, false → скрываем
+        if(enabled) removeShots();
+        observeShots(enabled);
         console.log('[Shots] plugin_shots_ready =', window.plugin_shots_ready);
     }
 
-    // Инициализация настроек
+    // Инициализация плагина
     function init() {
         try {
-            if (!window.Lampa || !Lampa.SettingsApi || !Lampa.Storage) {
+            if(!window.Lampa || !Lampa.SettingsApi || !Lampa.Storage){
                 setTimeout(init, 500);
                 return;
             }
 
-            // Получаем текущее состояние
+            // Получаем текущее значение
             var enabled = Lampa.Storage.get(storage_key, false);
             applyFlag(enabled);
 
-            // Добавляем пункт в главное меню Настроек
+            // Добавляем пункт в главное меню Настроек с иконкой ⚡
             Lampa.SettingsApi.addParam({
-                component: 'main', // Главное меню
+                component: 'main',
                 param: {
                     name: 'Shots',
                     type: 'toggle',
+                    icon: '⚡',
                     default: false
                 },
                 onChange: function(value) {
@@ -63,7 +67,7 @@
         }
     }
 
-    if (window.Lampa) {
+    if(window.Lampa){
         setTimeout(init, 500);
     } else {
         document.addEventListener('lampa:ready', function(){
