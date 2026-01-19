@@ -2,80 +2,47 @@
     'use strict';
 
     var storage_key = 'plugin_shots_enabled';
-    var interval_id = null;
 
-    // Скрыть кнопки
-    function hideShots() {
-        var buttons = document.querySelectorAll('.card__shots');
-        for (var i = 0; i < buttons.length; i++) {
-            buttons[i].style.display = 'none';
-        }
+    function setShotsFlag(enabled){
+        window.plugin_shots_ready = !enabled; // true → показываем, false → скрываем
+        console.log('[Shots] plugin_shots_ready =', window.plugin_shots_ready);
     }
 
-    // Показать кнопки
-    function showShots() {
-        var buttons = document.querySelectorAll('.card__shots');
-        for (var i = 0; i < buttons.length; i++) {
-            buttons[i].style.display = '';
-        }
-    }
-
-    // Применить текущий флаг
-    function applyFlag(enabled) {
-        if (interval_id) clearInterval(interval_id);
-
-        if (enabled) {
-            hideShots();
-            interval_id = setInterval(function() {
-                try { hideShots(); } catch(e) {}
-            }, 500);
-            console.log('[Shots] hidden');
-        } else {
-            showShots();
-            console.log('[Shots] visible');
-        }
-    }
-
-    // Инициализация настроек
-    function initSettings() {
-        try {
-            if (!window.Lampa || !Lampa.Settings || !Lampa.Storage) {
-                setTimeout(initSettings, 500);
+    function init(){
+        try{
+            if(!window.Lampa || !Lampa.SettingsApi || !Lampa.Storage){
+                setTimeout(init, 500);
                 return;
             }
 
-            // Состояние
+            // Сохраняем текущее значение
             var enabled = Lampa.Storage.get(storage_key, false);
+            setShotsFlag(enabled);
 
-            // Новый пункт в основном меню Настроек
-            Lampa.Settings.add({
-                title: 'Shots',
-                type: 'select',
-                default: enabled ? 'Да' : 'Нет',
-                options: ['Да','Нет'],
-                onChange: function(value) {
-                    var flag = value === 'Да';
-                    Lampa.Storage.set(storage_key, flag);
-                    applyFlag(flag);
+            // Добавляем пункт в главное меню Настроек
+            Lampa.SettingsApi.addParam({
+                component: 'main', // добавляем в главное меню
+                param: {
+                    name: 'Shots',
+                    type: 'toggle',
+                    default: false
+                },
+                onChange: function(value){
+                    Lampa.Storage.set(storage_key, value);
+                    setShotsFlag(value);
                 }
             });
 
-            // Применяем текущее значение
-            applyFlag(enabled);
-
             console.log('[Shots] plugin loaded');
-        } catch(e) {
+        }catch(e){
             console.error('[Shots] init error', e);
         }
     }
 
-    // Ждём Lampa
-    if (window.Lampa) {
-        setTimeout(initSettings, 500);
-    } else {
-        document.addEventListener('lampa:ready', function() {
-            setTimeout(initSettings, 500);
-        });
+    if(window.Lampa){
+        setTimeout(init, 500);
+    }else{
+        document.addEventListener('lampa:ready', init);
     }
 
 })();
