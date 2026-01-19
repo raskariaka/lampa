@@ -1,6 +1,7 @@
 (function() {
     'use strict';
 
+    // Имя ключа для хранения
     var storage_key = 'hide_shots_enabled';
     var interval_id = null;
 
@@ -20,53 +21,61 @@
     }
 
     function applyFlag(enabled) {
-        if (interval_id) {
-            clearInterval(interval_id);
-            interval_id = null;
-        }
-
-        if (enabled) {
-            hideShots();
-            interval_id = setInterval(function() {
-                if (document.querySelectorAll('.card__shots').length > 0) {
-                    hideShots();
-                }
-            }, 500);
-            console.log('[HideShots] Shots hidden');
-        } else {
-            showShots();
-            console.log('[HideShots] Shots visible');
-        }
-    }
-
-    function init() {
-        if (!window.Lampa || !Lampa.Settings || !Lampa.Storage) return;
-
-        var enabled = Lampa.Storage.get(storage_key, false);
-
-        // Добавляем пункт в меню Расширений
-        Lampa.Settings.add({
-            title: 'Удалять Shots',
-            type: 'toggle',
-            default: false,
-            onChange: function(value) {
-                Lampa.Storage.set(storage_key, value);
-                applyFlag(value);
+        try {
+            if (interval_id) clearInterval(interval_id);
+            if (enabled) {
+                hideShots();
+                interval_id = setInterval(function() {
+                    try {
+                        hideShots();
+                    } catch(e) {}
+                }, 1000);
+            } else {
+                showShots();
             }
-        });
-
-        // Применяем текущее значение
-        applyFlag(enabled);
-
-        console.log('[HideShots] plugin loaded');
+        } catch(e) {}
     }
 
-    // Ждём полной загрузки Lampa
+    function safeInit() {
+        try {
+            if (!window.Lampa || !Lampa.Settings || !Lampa.Storage) {
+                // Если ещё не готово, пробуем через 500 мс
+                setTimeout(safeInit, 500);
+                return;
+            }
+
+            var enabled = Lampa.Storage.get(storage_key, false);
+
+            // Добавляем пункт в меню
+            try {
+                Lampa.Settings.add({
+                    title: 'Удалять Shots',
+                    type: 'toggle',
+                    default: false,
+                    onChange: function(value) {
+                        try {
+                            Lampa.Storage.set(storage_key, value);
+                            applyFlag(value);
+                        } catch(e) {}
+                    }
+                });
+            } catch(e) {}
+
+            // Применяем текущее значение
+            applyFlag(enabled);
+
+            console.log('[HideShots] plugin loaded');
+        } catch(e) {
+            console.error('[HideShots] init error', e);
+        }
+    }
+
+    // Ждём lampa:ready
     if (window.Lampa) {
-        setTimeout(init, 500); // небольшая задержка, чтобы все модули Lampa успели инициализироваться
+        setTimeout(safeInit, 500);
     } else {
         document.addEventListener('lampa:ready', function() {
-            setTimeout(init, 500);
+            setTimeout(safeInit, 500);
         });
     }
 
