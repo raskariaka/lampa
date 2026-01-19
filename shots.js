@@ -1,10 +1,10 @@
 (function() {
     'use strict';
 
-    var STORAGE_KEY = 'hide_shots_enabled';
+    var STORAGE_KEY = 'plugin_shots_enabled';
     var observer = null;
 
-    // функция удаления Shots кнопок
+    // Функция удаления кнопок Shots
     function removeShotsButtons() {
         var els = document.querySelectorAll('.card__shots');
         for (var i = 0; i < els.length; i++) {
@@ -14,64 +14,63 @@
         }
     }
 
-    // отслеживание DOM на новые карточки
+    // Следим за динамически подгружаемыми карточками
     function startObserver(enabled) {
         if (observer) observer.disconnect();
 
         observer = new MutationObserver(function() {
-            if (enabled) {
-                removeShotsButtons();
-            }
+            if (enabled) removeShotsButtons();
         });
 
         observer.observe(document.body, { childList: true, subtree: true });
     }
 
-    // установка и применение флага
-    function applySetting(enabled) {
-        window.plugin_shots_ready = !enabled;
+    // Применяем флаг
+    function applyFlag(enabled) {
+        window.plugin_shots_ready = !enabled; // true → показываем, false → скрываем
         if (enabled) removeShotsButtons();
         startObserver(enabled);
-        console.log('[Shots UI] applied hideShots=' + enabled);
+        console.log('[Shots Settings] applied hideShots=' + enabled);
     }
 
-    function initPlugin() {
+    // Инициализация плагина
+    function init() {
         try {
-            // проверяем API
-            if (!window.Lampa || !Lampa.SettingsApi || !Lampa.Storage) {
-                setTimeout(initPlugin, 300);
+            if (!window.Lampa || !Lampa.Settings || !Lampa.Storage) {
+                setTimeout(init, 300);
                 return;
             }
 
-            // читаем сохраненное
+            // Читаем текущее значение
             var enabled = Lampa.Storage.get(STORAGE_KEY, false);
-            applySetting(enabled);
+            applyFlag(enabled);
 
-            // регистрируем пункт настроек
-            Lampa.SettingsApi.addParam({
-                component: 'extensions',
+            // Добавляем пункт в Настройки с иконкой ⚡
+            Lampa.Settings.add({
+                title: 'Shots',
+                component: 'settings', // добавляем в главное меню Настроек
                 param: {
                     name: 'Удалить Shots',
                     type: 'toggle',
-                    default: false
+                    default: false,
+                    icon: '⚡'
                 },
                 onChange: function(value) {
                     Lampa.Storage.set(STORAGE_KEY, value);
-                    applySetting(value);
+                    applyFlag(value);
                 }
             });
 
-            console.log('[Shots UI] plugin loaded');
-
+            console.log('[Shots Settings] plugin loaded');
         } catch(e) {
-            console.error('[Shots UI] init error', e);
+            console.error('[Shots Settings] init error', e);
         }
     }
 
     if (window.Lampa) {
-        setTimeout(initPlugin, 300);
+        setTimeout(init, 300);
     } else {
-        document.addEventListener('lampa:ready', initPlugin);
+        document.addEventListener('lampa:ready', init);
     }
 
 })();
