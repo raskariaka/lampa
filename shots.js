@@ -4,6 +4,7 @@
     var storage_key = 'hide_shots_enabled';
     var interval_id = null;
 
+    // Функции ES5
     function hideShots() {
         var buttons = document.querySelectorAll('.card__shots');
         for (var i = 0; i < buttons.length; i++) {
@@ -19,11 +20,18 @@
     }
 
     function applyFlag(enabled) {
-        if (interval_id) clearInterval(interval_id);
+        if (interval_id) {
+            clearInterval(interval_id);
+            interval_id = null;
+        }
 
         if (enabled) {
             hideShots();
-            interval_id = setInterval(hideShots, 500); // отслеживаем новые карточки
+            interval_id = setInterval(function() {
+                if (document.querySelectorAll('.card__shots').length > 0) {
+                    hideShots();
+                }
+            }, 500);
             console.log('[HideShots] Shots hidden');
         } else {
             showShots();
@@ -32,7 +40,7 @@
     }
 
     function init() {
-        if (!window.Lampa || !Lampa.Settings) return;
+        if (!window.Lampa || !Lampa.Settings || !Lampa.Storage) return;
 
         var enabled = Lampa.Storage.get(storage_key, false);
 
@@ -53,10 +61,13 @@
         console.log('[HideShots] plugin loaded');
     }
 
+    // Ждём полной загрузки Lampa
     if (window.Lampa) {
-        init();
+        setTimeout(init, 500); // небольшая задержка, чтобы все модули Lampa успели инициализироваться
     } else {
-        document.addEventListener('lampa:ready', init);
+        document.addEventListener('lampa:ready', function() {
+            setTimeout(init, 500);
+        });
     }
 
 })();
