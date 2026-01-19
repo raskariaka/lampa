@@ -1,69 +1,41 @@
 (function() {
     'use strict';
 
-    var STORAGE_KEY = 'plugin_shots_enabled';
     var observer = null;
 
-    // Функция удаления кнопок Shots
+    // Функция удаления всех кнопок Shots
     function removeShotsButtons() {
-        var els = document.querySelectorAll('.card__shots');
-        for (var i = 0; i < els.length; i++) {
-            if (els[i] && els[i].parentNode) {
-                els[i].parentNode.removeChild(els[i]);
+        var buttons = document.querySelectorAll('.card__shots');
+        for (var i = 0; i < buttons.length; i++) {
+            if (buttons[i] && buttons[i].parentNode) {
+                buttons[i].parentNode.removeChild(buttons[i]);
             }
         }
     }
 
-    // Следим за динамически подгружаемыми карточками
-    function startObserver(enabled) {
+    // Наблюдение за динамически подгружаемыми карточками
+    function startObserver() {
         if (observer) observer.disconnect();
 
         observer = new MutationObserver(function() {
-            if (enabled) removeShotsButtons();
+            removeShotsButtons();
         });
 
         observer.observe(document.body, { childList: true, subtree: true });
     }
 
-    // Применяем флаг
-    function applyFlag(enabled) {
-        window.plugin_shots_ready = !enabled; // true → показываем, false → скрываем
-        if (enabled) removeShotsButtons();
-        startObserver(enabled);
-        console.log('[Shots Settings] applied hideShots=' + enabled);
-    }
-
-    // Инициализация плагина
+    // Инициализация
     function init() {
         try {
-            if (!window.Lampa || !Lampa.Settings || !Lampa.Storage) {
-                setTimeout(init, 300);
-                return;
-            }
+            // Удаляем кнопки сразу после загрузки
+            removeShotsButtons();
 
-            // Читаем текущее значение
-            var enabled = Lampa.Storage.get(STORAGE_KEY, false);
-            applyFlag(enabled);
+            // Запускаем наблюдение за новыми карточками
+            startObserver();
 
-            // Добавляем пункт в Настройки с иконкой ⚡
-            Lampa.Settings.add({
-                title: 'Shots',
-                component: 'settings', // добавляем в главное меню Настроек
-                param: {
-                    name: 'Удалить Shots',
-                    type: 'toggle',
-                    default: false,
-                    icon: '⚡'
-                },
-                onChange: function(value) {
-                    Lampa.Storage.set(STORAGE_KEY, value);
-                    applyFlag(value);
-                }
-            });
-
-            console.log('[Shots Settings] plugin loaded');
+            console.log('[Shots Remove] plugin loaded: all Shots buttons removed');
         } catch(e) {
-            console.error('[Shots Settings] init error', e);
+            console.error('[Shots Remove] init error', e);
         }
     }
 
