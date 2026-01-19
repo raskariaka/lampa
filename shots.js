@@ -1,30 +1,27 @@
 (function() {
     'use strict';
 
-    function patchCard() {
-        if (!window.Lampa || !Lampa.Card) return;
+    function hideShotsButtons() {
+        var buttons = document.querySelectorAll('.card__shots'); // класс кнопки Shots
+        for (var i = 0; i < buttons.length; i++) {
+            buttons[i].style.display = 'none';
+        }
+    }
 
-        // Сохраняем оригинальный метод добавления действий
-        var originalAddAction = Lampa.Card.addAction;
+    function init() {
+        // Сразу скрываем уже существующие кнопки
+        hideShotsButtons();
 
-        // Патчим метод, чтобы блокировать Shots
-        Lampa.Card.addAction = function(params) {
-            if (params && params.name === 'shots') {
-                console.log('[HideShots] blocked Shots button');
-                return; // не добавляем кнопку
-            }
-            return originalAddAction.apply(this, arguments);
-        };
+        // Следим за новыми карточками каждые 500 мс
+        setInterval(hideShotsButtons, 500);
 
         console.log('[HideShots] plugin loaded');
     }
 
-    // Если Lampa уже инициализирована
     if (window.Lampa) {
-        patchCard();
+        init();
     } else {
-        // Ждём полной инициализации Lampa
-        document.addEventListener('lampa:ready', patchCard);
+        document.addEventListener('lampa:ready', init);
     }
 
 })();
