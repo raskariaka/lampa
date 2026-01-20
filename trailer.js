@@ -6,8 +6,17 @@
         Lampa.Listener.follow('full', function (e) {
             if (e.type === 'complite') {
                 setTimeout(function() {
-                    // Удаляем кнопку трейлеров
-                    $('.trailer-view-button').remove();
+                    // Пробуем несколько возможных селекторов для трейлеров
+                    var selectors = [
+                        '.trailer-view-button',           // Основной селектор из LAMPA
+                        '[data-action="trailer"]',       // По data-атрибуту
+                        '.action-trailer',               // Альтернативный класс
+                        '.trailer-button'                // Еще один возможный вариант
+                    ];
+                    
+                    selectors.forEach(function(selector) {
+                        $(selector).remove();
+                    });
                 }, 100);
             }
         });
