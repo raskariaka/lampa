@@ -7,7 +7,7 @@
             if (e.type === 'complite') {
                 setTimeout(function() {
                     // Удаляем кнопку трейлеров
-                    $('.view--trailer'').remove();
+                    $('.view--trailer').remove();
                 }, 100);
             }
         });
