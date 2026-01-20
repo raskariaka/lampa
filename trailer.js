@@ -6,7 +6,6 @@
         Lampa.Listener.follow('full', function (e) {
             if (e.type === 'complite') {
                 setTimeout(function() {
-                    // Удаляем кнопку трейлеров
                     $('.view--trailer').remove();
                 }, 100);
             }
