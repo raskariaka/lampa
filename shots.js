@@ -1,48 +1,35 @@
 (function() {
     'use strict';
 
-    var observer = null;
+    // Функция для патча Lampa.Card
+    function patchCard() {
+        if (!window.Lampa || !Lampa.Card) return;
 
-    // Функция удаления всех кнопок Shots
-    function removeShotsButtons() {
-        var buttons = document.querySelectorAll('.card__shots');
-        for (var i = 0; i < buttons.length; i++) {
-            if (buttons[i] && buttons[i].parentNode) {
-                buttons[i].parentNode.removeChild(buttons[i]);
+        // Сохраняем оригинальный метод добавления действий
+        var originalAddAction = Lampa.Card.prototype.addAction;
+
+        Lampa.Card.prototype.addAction = function(action) {
+            // Если это кнопка Shots, не добавляем её
+            if (action && action.id === 'shots') {
+                return;
             }
-        }
+
+            // Вызов оригинального метода для остальных действий
+            return originalAddAction.call(this, action);
+        };
+
+        console.log('[Shots Patch] Card.addAction patched: Shots button removed');
     }
 
-    // Наблюдение за динамически подгружаемыми карточками
-    function startObserver() {
-        if (observer) observer.disconnect();
-
-        observer = new MutationObserver(function() {
-            removeShotsButtons();
-        });
-
-        observer.observe(document.body, { childList: true, subtree: true });
-    }
-
-    // Инициализация
+    // Инициализация плагина
     function init() {
-        try {
-            // Удаляем кнопки сразу после загрузки
-            removeShotsButtons();
-
-            // Запускаем наблюдение за новыми карточками
-            startObserver();
-
-            console.log('[Shots Remove] plugin loaded: all Shots buttons removed');
-        } catch(e) {
-            console.error('[Shots Remove] init error', e);
+        if (window.Lampa && Lampa.Card) {
+            patchCard();
+        } else {
+            document.addEventListener('lampa:ready', patchCard);
         }
     }
 
-    if (window.Lampa) {
-        setTimeout(init, 300);
-    } else {
-        document.addEventListener('lampa:ready', init);
-    }
+    init();
 
 })();
