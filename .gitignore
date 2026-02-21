@@ -12,12 +12,13 @@ data/
 config.yml
 .lampac/
 
+# Node.js
+backend/node_modules/
+backend/package-lock.json
+
 # Временные файлы
 *.tmp
 *.cache
-
-# Node modules (если будет использоваться)
-node_modules/
 
 # OS файлы
 .DS_Store
