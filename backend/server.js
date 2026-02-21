@@ -7,6 +7,7 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const NodeCache = require('node-cache');
+const API_KEYS = require('./api-keys');
 
 const app = express();
 const PORT = process.env.PORT || 9876;
@@ -93,12 +94,22 @@ app.get('/lifeevents', (req, res) => {
   });
 });
 
-// Эндпоинт для поиска (lite/events с параметром title)
+// Список балансеров с поиском
+app.get('/lite/withsearch', (req, res) => {
+  const withSearch = BALANCERS
+    .filter(b => b.enabled)
+    .map(b => b.balanser || b.name.toLowerCase());
+  
+  console.log('[WITHSEARCH] Returning balancers list:', withSearch);
+  res.json(withSearch);
+});
+
+// Эндпоинт для поиска (lite/:balanser)
 app.get('/lite/:balanser', async (req, res) => {
   const { balanser } = req.params;
   const { title, id, imdb_id, kinopoisk_id, tmdb_id, serial, original_title, original_language, year, source, clarification, similar, rchtype, cub_id } = req.query;
   
-  console.log(`[SEARCH] Balanser: ${balanser}, Title: ${title || original_title}, ID: ${id}`);
+  console.log(`[SEARCH] Balanser: ${balanser}, Title: ${title || original_title}, ID: ${id}, IMDB: ${imdb_id}`);
   
   const cacheKey = `search_${balanser}_${title || id}`;
   const cached = cache.get(cacheKey);
@@ -109,7 +120,7 @@ app.get('/lite/:balanser', async (req, res) => {
   }
   
   try {
-    // Проксируем запрос к балансеру
+    // Находим конфиг балансера
     const balanserConfig = BALANCERS.find(b => b.name.toLowerCase() === balanser.toLowerCase());
     
     if (!balanserConfig) {
@@ -117,11 +128,65 @@ app.get('/lite/:balanser', async (req, res) => {
       return res.json({});
     }
     
-    // Для демонстрации возвращаем пустой ответ (так как нужны API ключи)
-    console.log(`[INFO] Need API key for ${balanserConfig.name}`);
-    const emptyResponse = {};
-    cache.set(cacheKey, emptyResponse);
-    res.json(emptyResponse);
+    // Проверяем API ключ
+    const apiKey = API_KEYS[balanser.toLowerCase()];
+    if (!apiKey) {
+      console.log(`[WARNING] No API key for ${balanserConfig.name}`);
+      // Возвращаем пустой ответ - нет ключа
+      const emptyResponse = {};
+      cache.set(cacheKey, emptyResponse);
+      return res.json(emptyResponse);
+    }
+    
+    // Формируем запрос к API балансера
+    let apiUrl = '';
+    let params = {};
+    
+    if (balanser.toLowerCase() === 'kodik') {
+      apiUrl = 'https://kodik.cc/api/sources';
+      params = {
+        id: imdb_id || kinopoisk_id || id,
+        imdb_id: imdb_id || '',
+        kinopoisk_id: kinopoisk_id || '',
+        type: serial ? 'tv-series' : 'movie',
+        token: apiKey,
+        limit: 10
+      };
+    } else if (balanser.toLowerCase() === 'collaps') {
+      apiUrl = 'https://collaps.work/api/sources';
+      params = {
+        id: imdb_id || kinopoisk_id || id,
+        token: apiKey,
+        limit: 10
+      };
+    } else if (balanser.toLowerCase() === 'videocdn') {
+      apiUrl = 'https://videocdn.tv/api/short';
+      params = {
+        api_key: apiKey,
+        imdb_id: imdb_id || '',
+        kinopoisk_id: kinopoisk_id || ''
+      };
+    } else {
+      console.log(`[INFO] Balancer ${balanserConfig.name} not fully supported yet`);
+      return res.json({});
+    }
+    
+    console.log(`[REQUEST] ${apiUrl}`, JSON.stringify(params));
+    
+    const response = await axios.get(apiUrl, {
+      params,
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Lampa Backend/1.0',
+        'Accept': 'application/json'
+      }
+    });
+    
+    const result = response.data;
+    console.log(`[RESPONSE] ${balanser}:`, JSON.stringify(result).substring(0, 200));
+    
+    cache.set(cacheKey, result);
+    res.json(result);
     
   } catch (error) {
     console.error(`[ERROR] proxying to ${balanser}:`, error.message);

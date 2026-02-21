@@ -11,6 +11,7 @@ data/
 # Конфигурации с ключами
 config.yml
 .lampac/
+backend/api-keys.js
 
 # Node.js
 backend/node_modules/
