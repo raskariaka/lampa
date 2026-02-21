@@ -19,6 +19,12 @@ const cache = new NodeCache({ stdTTL: 3600 });
 app.use(cors());
 app.use(express.json());
 
+// Логирование всех запросов
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`, req.query ? JSON.stringify(req.query) : '');
+  next();
+});
+
 // Список балансеров (источников видео)
 const BALANCERS = [
   { name: 'Kodik', url: 'https://kodik.cc', enabled: true },
@@ -52,6 +58,7 @@ app.get('/lite/events', (req, res) => {
   const online = BALANCERS
     .filter(b => b.enabled)
     .map(b => ({
+      balanser: b.name.toLowerCase(),
       name: b.name,
       url: `${b.url}/source`,
       show: true
@@ -60,7 +67,29 @@ app.get('/lite/events', (req, res) => {
   res.json({
     online,
     ready: true,
+    life: false,  // Указываем, что это не life режим
     memkey: 'local_memkey_' + Date.now()
+  });
+});
+
+// Life events (альтернативный эндпоинт)
+app.get('/lifeevents', (req, res) => {
+  const { memkey } = req.query;
+  
+  const online = BALANCERS
+    .filter(b => b.enabled)
+    .map(b => ({
+      balanser: b.name.toLowerCase(),
+      name: b.name,
+      url: `${b.url}/source`,
+      show: true
+    }));
+  
+  res.json({
+    online,
+    ready: true,
+    life: false,
+    memkey: memkey || 'local_memkey_' + Date.now()
   });
 });
 
@@ -69,10 +98,13 @@ app.get('/lite/:balanser', async (req, res) => {
   const { balanser } = req.params;
   const { title, id, imdb_id, kinopoisk_id, tmdb_id, serial, original_title, original_language, year, source, clarification, similar, rchtype, cub_id } = req.query;
   
+  console.log(`[SEARCH] Balanser: ${balanser}, Title: ${title || original_title}, ID: ${id}`);
+  
   const cacheKey = `search_${balanser}_${title || id}`;
   const cached = cache.get(cacheKey);
   
   if (cached) {
+    console.log(`[CACHE HIT] ${cacheKey}`);
     return res.json(cached);
   }
   
@@ -81,35 +113,19 @@ app.get('/lite/:balanser', async (req, res) => {
     const balanserConfig = BALANCERS.find(b => b.name.toLowerCase() === balanser.toLowerCase());
     
     if (!balanserConfig) {
-      return res.status(404).json({ error: 'Balancer not found' });
+      console.log(`[ERROR] Balancer not found: ${balanser}`);
+      return res.json({});
     }
     
-    // Формируем запрос к API балансера
-    const apiUrl = `${balanserConfig.url}/search`;
-    const response = await axios.get(apiUrl, {
-      params: {
-        title: title || '',
-        id: id || '',
-        imdb_id: imdb_id || '',
-        kinopoisk_id: kinopoisk_id || '',
-        tmdb_id: tmdb_id || '',
-        year: year || ''
-      },
-      timeout: 10000,
-      headers: {
-        'User-Agent': 'Lampa Backend/1.0'
-      }
-    });
+    // Для демонстрации возвращаем пустой ответ (так как нужны API ключи)
+    console.log(`[INFO] Need API key for ${balanserConfig.name}`);
+    const emptyResponse = {};
+    cache.set(cacheKey, emptyResponse);
+    res.json(emptyResponse);
     
-    const result = response.data;
-    cache.set(cacheKey, result);
-    res.json(result);
   } catch (error) {
-    console.error(`Error proxying to ${balanser}:`, error.message);
-    res.status(500).json({
-      error: 'Failed to fetch from balancer',
-      message: error.message
-    });
+    console.error(`[ERROR] proxying to ${balanser}:`, error.message);
+    res.json({});
   }
 });
 
