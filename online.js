@@ -3,18 +3,18 @@
 
   var Defined = {
     api: 'lampac',
-    localhost: 'https://raskariaka.github.io/lampa/',
+    localhost: 'http://z01.online/',
     apn: ''
   };
 
   var balansers_with_search;
-  
+
   var unic_id = Lampa.Storage.get('lampac_unic_id', '');
   if (!unic_id) {
     unic_id = Lampa.Utils.uid(8).toLowerCase();
     Lampa.Storage.set('lampac_unic_id', unic_id);
   }
-  
+
     function getAndroidVersion() {
   if (Lampa.Platform.is('android')) {
     try {
@@ -28,7 +28,7 @@
   }
 }
 
-var hostkey = 'https://raskariaka.github.io/lampa'.replace('http://', '').replace('https://', '');
+var hostkey = 'http://z01.online'.replace('http://', '').replace('https://', '');
 
 if (!window.rch_nws || !window.rch_nws[hostkey]) {
   if (!window.rch_nws) window.rch_nws = {};
@@ -65,7 +65,7 @@ window.rch_nws[hostkey].typeInvoke = function rchtypeInvoke(host, call) {
 };
 
 window.rch_nws[hostkey].Registry = function RchRegistry(client, startConnection) {
-  window.rch_nws[hostkey].typeInvoke('https://raskariaka.github.io/lampa', function() {
+  window.rch_nws[hostkey].typeInvoke('http://z01.online', function() {
 
     client.invoke("RchRegistry", {
       version: 154,
@@ -95,7 +95,7 @@ window.rch_nws[hostkey].Registry = function RchRegistry(client, startConnection)
 	  
 	  function sendResult(uri, html) {
 	    $.ajax({
-	      url: 'https://raskariaka.github.io/lampa/rch/' + uri + '?id=' + rchId,
+	      url: 'http://z01.online/rch/' + uri + '?id=' + rchId,
 	      type: 'POST',
 	      data: html,
 	      async: true,
@@ -176,7 +176,7 @@ window.rch_nws[hostkey].Registry = function RchRegistry(client, startConnection)
     });
   });
 };
-  window.rch_nws[hostkey].typeInvoke('https://raskariaka.github.io/lampa', function() {});
+  window.rch_nws[hostkey].typeInvoke('http://z01.online', function() {});
 
   function rchInvoke(json, call) {
     if (window.nwsClient && window.nwsClient[hostkey] && window.nwsClient[hostkey]._shouldReconnect){
@@ -262,7 +262,7 @@ window.rch_nws[hostkey].Registry = function RchRegistry(client, startConnection)
 	
     if (balansers_with_search == undefined) {
       network.timeout(10000);
-      network.silent(account('https://raskariaka.github.io/lampa/lite/withsearch'), function(json) {
+      network.silent(account('http://z01.online/lite/withsearch'), function(json) {
         balansers_with_search = json;
       }, function() {
 		  balansers_with_search = [];
@@ -1877,7 +1877,7 @@ window.rch_nws[hostkey].Registry = function RchRegistry(client, startConnection)
       Lampa.Template.add('lampac_prestige_folder', "<div class=\"online-prestige online-prestige--folder selector\">\n            <div class=\"online-prestige__folder\">\n                <svg viewBox=\"0 0 128 112\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                    <rect y=\"20\" width=\"128\" height=\"92\" rx=\"13\" fill=\"white\"></rect>\n                    <path d=\"M29.9963 8H98.0037C96.0446 3.3021 91.4079 0 86 0H42C36.5921 0 31.9555 3.3021 29.9963 8Z\" fill=\"white\" fill-opacity=\"0.23\"></path>\n                    <rect x=\"11\" y=\"8\" width=\"106\" height=\"76\" rx=\"13\" fill=\"white\" fill-opacity=\"0.51\"></rect>\n                </svg>\n            </div>\n            <div class=\"online-prestige__body\">\n                <div class=\"online-prestige__head\">\n                    <div class=\"online-prestige__title\">{title}</div>\n                    <div class=\"online-prestige__time\">{time}</div>\n                </div>\n\n                <div class=\"online-prestige__footer\">\n                    <div class=\"online-prestige__info\">{info}</div>\n                </div>\n            </div>\n        </div>");
       Lampa.Template.add('lampac_prestige_watched', "<div class=\"online-prestige online-prestige-watched selector\">\n            <div class=\"online-prestige-watched__icon\">\n                <svg width=\"21\" height=\"21\" viewBox=\"0 0 21 21\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                    <circle cx=\"10.5\" cy=\"10.5\" r=\"9\" stroke=\"currentColor\" stroke-width=\"3\"/>\n                    <path d=\"M14.8477 10.5628L8.20312 14.399L8.20313 6.72656L14.8477 10.5628Z\" fill=\"currentColor\"/>\n                </svg>\n            </div>\n            <div class=\"online-prestige-watched__body\">\n                \n            </div>\n        </div>");
     }
-    var button = "<div class=\"full-start__button selector view--online lampac--button\" data-subtitle=\"".concat(manifst.name, " ").concat(manifst.version, "\">\n         <svg width=\"128\" height=\"128\" viewBox=\"0 0 128 128\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"8\" y=\"8\" width=\"112\" height=\"112\" rx=\"32\" fill=\"white\" stroke=\"#2886fb\" stroke-width=\"12\"/><text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"central\" font-family=\"Arial, sans-serif\" font-size=\"76\" font-weight=\"bold\" fill=\"#2886fb\">Z</text></svg>\n\n        <span>#{title_online}</span>\n    </div>"); // нужна заглушка, а то при страте лампы говорит пусто
+    var button = "<div class=\"full-start__button selector view--online lampac--button\" data-subtitle=\"".concat(manifst.name, " ").concat(manifst.version, "\">\n         <svg width=\"128\" height=\"128\" viewBox=\"0 0 128 128\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"64\" cy=\"64\" r=\"56\" fill=\"#2886fb\" stroke=\"#fff\" stroke-width=\"4\"/><path d=\"M52 40 L92 64 L52 88 Z\" fill=\"#fff\"/></svg>\n\n        <span>#{title_online}</span>\n    </div>"); // нужна заглушка, а то при страте лампы говорит пусто
     Lampa.Component.add('lampac_z', component); //то же самое
     resetTemplates();
 
