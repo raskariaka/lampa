@@ -1,206 +1,157 @@
 /**
- * Lampa Backend Server
- * Простой сервер для предоставления балансеров и проксирования запросов
+ * Lampa Backend Server v3
+ * Минимальная версия с тестовыми данными
+ * 
+ * Для полноценной работы нужны API ключи от балансеров.
+ * Пока ключей нет, возвращаем тестовые данные для демонстрации.
  */
 
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const NodeCache = require('node-cache');
-const API_KEYS = require('./api-keys');
 
 const app = express();
 const PORT = process.env.PORT || 9876;
 const HOST = '0.0.0.0';
 
-// Кэш для данных (TTL 1 час)
 const cache = new NodeCache({ stdTTL: 3600 });
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Логирование всех запросов
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`, req.query ? JSON.stringify(req.query) : '');
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`, req.query ? JSON.stringify(req.query).substring(0, 200) : '');
   next();
 });
 
-// Список балансеров (источников видео)
 const BALANCERS = [
-  { name: 'Kodik', url: 'https://kodik.cc', enabled: true },
-  { name: 'Collaps', url: 'https://collaps.work', enabled: true },
-  { name: 'VideoCDN', url: 'https://videocdn.tv', enabled: true },
-  { name: 'Filmix', url: 'https://filmix.co', enabled: true },
-  { name: 'Rezka', url: 'https://rezka.ag', enabled: true },
-  { name: 'VideoDB', url: 'https://videodb.pro', enabled: true },
-  { name: 'Alloha', url: 'https://alloha.tv', enabled: true },
-  { name: 'AniLibria', url: 'https://anilibria.tv', enabled: true },
-  { name: 'AnimeGO', url: 'https://animego.org', enabled: true },
-  { name: 'KinoPub', url: 'https://kinopub.com', enabled: true }
+  { name: 'Kodik', balanser: 'kodik', enabled: true },
+  { name: 'Collaps', balanser: 'collaps', enabled: true },
+  { name: 'VideoCDN', balanser: 'videocdn', enabled: true },
+  { name: 'Filmix', balanser: 'filmix', enabled: true },
+  { name: 'Rezka', balanser: 'rezka', enabled: true },
+  { name: 'Alloha', balanser: 'alloha', enabled: true },
+  { name: 'AniLibria', balanser: 'anilibria', enabled: true },
+  { name: 'AnimeGO', balanser: 'animego', enabled: true }
 ];
 
-// Главный эндпоинт - информация о сервере
 app.get('/', (req, res) => {
   res.json({
     name: 'Lampa Backend',
-    version: '1.0.0',
+    version: '3.0.0',
     port: PORT,
     status: 'running',
-    balancers_count: BALANCERS.filter(b => b.enabled).length
+    balancers_count: BALANCERS.filter(b => b.enabled).length,
+    note: 'Demo mode - get API keys for real data'
   });
 });
 
-// Список балансеров
 app.get('/lite/events', (req, res) => {
-  const { life, id, title, original_title, serial, source, clarification, similar } = req.query;
+  const online = BALANCERS.filter(b => b.enabled).map(b => ({
+    balanser: b.balanser,
+    name: b.name,
+    url: b.name,
+    show: true
+  }));
   
-  // Формируем ответ со списком доступных балансеров
-  const online = BALANCERS
-    .filter(b => b.enabled)
-    .map(b => ({
-      balanser: b.name.toLowerCase(),
-      name: b.name,
-      url: `${b.url}/source`,
-      show: true
-    }));
-  
-  res.json({
-    online,
-    ready: true,
-    life: false,  // Указываем, что это не life режим
-    memkey: 'local_memkey_' + Date.now()
-  });
+  res.json({ online, ready: true, life: false, memkey: 'memkey_' + Date.now() });
 });
 
-// Life events (альтернативный эндпоинт)
 app.get('/lifeevents', (req, res) => {
-  const { memkey } = req.query;
+  const online = BALANCERS.filter(b => b.enabled).map(b => ({
+    balanser: b.balanser,
+    name: b.name,
+    url: b.name,
+    show: true
+  }));
   
-  const online = BALANCERS
-    .filter(b => b.enabled)
-    .map(b => ({
-      balanser: b.name.toLowerCase(),
-      name: b.name,
-      url: `${b.url}/source`,
-      show: true
-    }));
-  
+  res.json({ online, ready: true, life: false, memkey: 'memkey_' + Date.now() });
+});
+
+app.get('/lite/withsearch', (req, res) => {
+  res.json(BALANCERS.filter(b => b.enabled).map(b => b.balanser));
+});
+
+app.get('/externalids', (req, res) => {
   res.json({
-    online,
-    ready: true,
-    life: false,
-    memkey: memkey || 'local_memkey_' + Date.now()
+    imdb_id: req.query.imdb_id || '',
+    kinopoisk_id: req.query.kinopoisk_id || '',
+    tmdb_id: req.query.id || ''
   });
 });
 
-// Список балансеров с поиском
-app.get('/lite/withsearch', (req, res) => {
-  const withSearch = BALANCERS
-    .filter(b => b.enabled)
-    .map(b => b.balanser || b.name.toLowerCase());
-  
-  console.log('[WITHSEARCH] Returning balancers list:', withSearch);
-  res.json(withSearch);
-});
-
-// Эндпоинт для поиска (lite/:balanser)
 app.get('/lite/:balanser', async (req, res) => {
   const { balanser } = req.params;
-  const { title, id, imdb_id, kinopoisk_id, tmdb_id, serial, original_title, original_language, year, source, clarification, similar, rchtype, cub_id } = req.query;
+  const { title, id, imdb_id, kinopoisk_id, tmdb_id, serial, original_title, year } = req.query;
   
-  console.log(`[SEARCH] Balanser: ${balanser}, Title: ${title || original_title}, ID: ${id}, IMDB: ${imdb_id}`);
+  console.log(`[SEARCH] ${balanser}: ${title || original_title || 'Unknown'}, IMDB: ${imdb_id || 'N/A'}`);
   
-  const cacheKey = `search_${balanser}_${title || id}`;
+  const cacheKey = `search_${balanser}_${imdb_id || kinopoisk_id || id || title}`;
   const cached = cache.get(cacheKey);
+  if (cached) return res.json(cached);
   
-  if (cached) {
-    console.log(`[CACHE HIT] ${cacheKey}`);
-    return res.json(cached);
+  // Возвращаем тестовые данные для демонстрации
+  const mockData = generateMockData(balanser, { title, original_title, imdb_id, kinopoisk_id, serial, year });
+  
+  if (mockData && mockData.results && mockData.results.length > 0) {
+    console.log(`[MOCK] ${balanser}: Returning ${mockData.results.length} mock results`);
+    cache.set(cacheKey, mockData);
+    return res.json(mockData);
   }
   
-  try {
-    // Находим конфиг балансера
-    const balanserConfig = BALANCERS.find(b => b.name.toLowerCase() === balanser.toLowerCase());
-    
-    if (!balanserConfig) {
-      console.log(`[ERROR] Balancer not found: ${balanser}`);
-      return res.json({});
-    }
-    
-    // Проверяем API ключ
-    const apiKey = API_KEYS[balanser.toLowerCase()];
-    if (!apiKey) {
-      console.log(`[WARNING] No API key for ${balanserConfig.name}`);
-      // Возвращаем пустой ответ - нет ключа
-      const emptyResponse = {};
-      cache.set(cacheKey, emptyResponse);
-      return res.json(emptyResponse);
-    }
-    
-    // Формируем запрос к API балансера
-    let apiUrl = '';
-    let params = {};
-    
-    if (balanser.toLowerCase() === 'kodik') {
-      apiUrl = 'https://kodik.cc/api/sources';
-      params = {
-        id: imdb_id || kinopoisk_id || id,
-        imdb_id: imdb_id || '',
-        kinopoisk_id: kinopoisk_id || '',
-        type: serial ? 'tv-series' : 'movie',
-        token: apiKey,
-        limit: 10
-      };
-    } else if (balanser.toLowerCase() === 'collaps') {
-      apiUrl = 'https://collaps.work/api/sources';
-      params = {
-        id: imdb_id || kinopoisk_id || id,
-        token: apiKey,
-        limit: 10
-      };
-    } else if (balanser.toLowerCase() === 'videocdn') {
-      apiUrl = 'https://videocdn.tv/api/short';
-      params = {
-        api_key: apiKey,
-        imdb_id: imdb_id || '',
-        kinopoisk_id: kinopoisk_id || ''
-      };
-    } else {
-      console.log(`[INFO] Balancer ${balanserConfig.name} not fully supported yet`);
-      return res.json({});
-    }
-    
-    console.log(`[REQUEST] ${apiUrl}`, JSON.stringify(params));
-    
-    const response = await axios.get(apiUrl, {
-      params,
-      timeout: 10000,
-      headers: {
-        'User-Agent': 'Lampa Backend/1.0',
-        'Accept': 'application/json'
-      }
-    });
-    
-    const result = response.data;
-    console.log(`[RESPONSE] ${balanser}:`, JSON.stringify(result).substring(0, 200));
-    
-    cache.set(cacheKey, result);
-    res.json(result);
-    
-  } catch (error) {
-    console.error(`[ERROR] proxying to ${balanser}:`, error.message);
-    res.json({});
-  }
+  res.json({});
 });
 
-// Прокси для CORS
+// Генерация тестовых данных
+function generateMockData(balanser, params) {
+  const title = params.original_title || params.title || 'Unknown';
+  const isSerial = params.serial === '1' || params.serial === 'true';
+  const year = params.year || '2024';
+  
+  // Разные данные для разных балансеров
+  const players = {
+    kodik: 'https://kodik.cc/video/',
+    collaps: 'https://collaps.work/video/',
+    videocdn: 'https://videocdn.tv/video/',
+    filmix: 'https://filmix.co/video/',
+    rezka: 'https://rezka.ag/video/',
+    alloha: 'https://alloha.tv/video/',
+    anilibria: 'https://anilibria.tv/player/',
+    animego: 'https://animego.org/player/'
+  };
+  
+  const qualities = ['360p', '480p', '720p', '1080p'];
+  
+  // Генерируем 2-4 фейковых результата
+  const numResults = Math.floor(Math.random() * 3) + 2;
+  const results = [];
+  
+  for (let i = 0; i < numResults; i++) {
+    const quality = qualities[Math.floor(Math.random() * qualities.length)];
+    const voice = ['Дубляж', 'Многоголосый', 'Двухголосый', 'Одноголосый'][Math.floor(Math.random() * 4)];
+    
+    results.push({
+      id: `${balanser}_${Date.now()}_${i}`,
+      title: title,
+      link: `${players[balanser]}${balanser}_${i}`,
+      iframe: `${players[balanser]}${balanser}_${i}`,
+      quality: quality,
+      voice: voice,
+      type: isSerial ? 'tv-series' : 'movie',
+      year: year,
+      season: isSerial ? 1 : undefined,
+      episode: isSerial ? Math.floor(Math.random() * 8) + 1 : undefined,
+      duration: isSerial ? 25 : 120
+    });
+  }
+  
+  return { results };
+}
+
 app.all('/cors/*', async (req, res) => {
   const targetUrl = req.params[0];
-  
-  if (!targetUrl) {
-    return res.status(400).json({ error: 'URL required' });
-  }
+  if (!targetUrl) return res.status(400).json({ error: 'URL required' });
   
   try {
     const response = await axios({
@@ -208,87 +159,36 @@ app.all('/cors/*', async (req, res) => {
       url: targetUrl,
       data: req.body,
       params: req.query,
-      headers: {
-        'User-Agent': 'Lampa Backend/1.0'
-      },
       timeout: 15000,
-      maxRedirects: 5
+      headers: { 'User-Agent': 'Mozilla/5.0' }
     });
-    
     res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
-    
     res.status(response.status).send(response.data);
   } catch (error) {
-    console.error('CORS proxy error:', error.message);
-    res.status(500).json({
-      error: 'Proxy error',
-      message: error.message
-    });
+    res.status(500).json({ error: 'Proxy error', message: error.message });
   }
 });
 
-// Эндпоинт для получения списка с поиском
-app.get('/lite/withsearch', (req, res) => {
-  const withSearch = BALANCERS
-    .filter(b => b.enabled)
-    .map(b => b.name.toLowerCase());
-  
-  res.json(withSearch);
-});
+app.post('/rch/*', (req, res) => res.json({ status: 'ok' }));
+app.get('/rch/*', (req, res) => res.json({ status: 'ok' }));
+app.get('/health', (req, res) => res.json({ status: 'healthy' }));
 
-// External IDs (для получения дополнительной информации о фильме)
-app.get('/externalids', (req, res) => {
-  const { id, imdb_id, kinopoisk_id, serial } = req.query;
-  
-  res.json({
-    imdb_id: imdb_id || '',
-    kinopoisk_id: kinopoisk_id || '',
-    tmdb_id: id || ''
-  });
-});
-
-// RCH (Remote Client Handler) - заглушка
-app.post('/rch/*', (req, res) => {
-  res.json({ status: 'ok' });
-});
-
-app.get('/rch/*', (req, res) => {
-  res.json({ status: 'ok' });
-});
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
-});
-
-// Обработка ошибок
 app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).json({
-    error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined
-  });
+  console.error('Error:', err);
+  res.status(500).json({ error: 'Internal error' });
 });
 
-// 404
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'Not found',
-    path: req.path
-  });
-});
+app.use((req, res) => res.status(404).json({ error: 'Not found' }));
 
-// Запуск сервера
 app.listen(PORT, HOST, () => {
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
-║              Lampa Backend Server                         ║
+║         Lampa Backend Server v3.0 (DEMO)                  ║
 ╠═══════════════════════════════════════════════════════════╣
 ║  URL: http://${HOST}:${PORT}                            
 ║  Status: Running                                          ║
-║  Balancers: ${BALANCERS.filter(b => b.enabled).length} enabled                         ║
+║  Mode: DEMO (mock data)                                   ║
+║  Note: Get API keys for real video sources                ║
 ╚═══════════════════════════════════════════════════════════╝
   `);
 });
