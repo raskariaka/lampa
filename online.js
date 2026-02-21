@@ -3,7 +3,7 @@
 
   var Defined = {
     api: 'lampac',
-    localhost: 'http://localhost:9876/',
+    localhost: 'https://lampa.prostotestim.ru/',
     apn: ''
   };
 
@@ -28,7 +28,7 @@
   }
 }
 
-var hostkey = 'http://z01.online'.replace('http://', '').replace('https://', '');
+var hostkey = 'lampa.prostotestim.ru'.replace('http://', '').replace('https://', '');
 
 if (!window.rch_nws || !window.rch_nws[hostkey]) {
   if (!window.rch_nws) window.rch_nws = {};
@@ -65,7 +65,7 @@ window.rch_nws[hostkey].typeInvoke = function rchtypeInvoke(host, call) {
 };
 
 window.rch_nws[hostkey].Registry = function RchRegistry(client, startConnection) {
-  window.rch_nws[hostkey].typeInvoke('http://z01.online', function() {
+  window.rch_nws[hostkey].typeInvoke('https://lampa.prostotestim.ru', function() {
 
     client.invoke("RchRegistry", {
       version: 154,
@@ -95,7 +95,7 @@ window.rch_nws[hostkey].Registry = function RchRegistry(client, startConnection)
 	  
 	  function sendResult(uri, html) {
 	    $.ajax({
-	      url: 'http://z01.online/rch/' + uri + '?id=' + rchId,
+	      url: 'https://lampa.prostotestim.ru/rch/' + uri + '?id=' + rchId,
 	      type: 'POST',
 	      data: html,
 	      async: true,
@@ -176,7 +176,7 @@ window.rch_nws[hostkey].Registry = function RchRegistry(client, startConnection)
     });
   });
 };
-  window.rch_nws[hostkey].typeInvoke('http://z01.online', function() {});
+  window.rch_nws[hostkey].typeInvoke('https://lampa.prostotestim.ru', function() {});
 
   function rchInvoke(json, call) {
     if (window.nwsClient && window.nwsClient[hostkey] && window.nwsClient[hostkey]._shouldReconnect){
@@ -262,7 +262,7 @@ window.rch_nws[hostkey].Registry = function RchRegistry(client, startConnection)
 	
     if (balansers_with_search == undefined) {
       network.timeout(10000);
-      network.silent(account('http://z01.online/lite/withsearch'), function(json) {
+      network.silent(account('https://lampa.prostotestim.ru/lite/withsearch'), function(json) {
         balansers_with_search = json;
       }, function() {
 		  balansers_with_search = [];
