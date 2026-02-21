@@ -1,0 +1,56 @@
+# Lampac конфигурация
+# Сохраните этот файл как config.yml в папке с docker-compose.yml
+
+# Порт сервера
+port: 8080
+
+# Кэширование
+cache:
+  enabled: true
+  ttl: 3600  # Время жизни кэша в секундах
+
+# Логирование
+log:
+  level: info  # debug, info, warn, error
+  format: text # text, json
+
+# База данных (SQLite по умолчанию)
+database:
+  type: sqlite
+  path: ./data/lampac.db
+
+# Настройки прокси
+proxy:
+  enabled: true
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  
+# CORS (для доступа из браузера)
+cors:
+  enabled: true
+  origins:
+    - "*"
+
+# Безопасность
+security:
+  rate_limit: 100  # Запросов в минуту
+  api_key: ""      # Опционально: ключ для доступа к API
+
+# Источники видео (балансеры)
+sources:
+  kodik:
+    enabled: true
+  collabs:
+    enabled: true
+  videocdn:
+    enabled: true
+  filmix:
+    enabled: true
+  rezka:
+    enabled: true
+  videodb:
+    enabled: true
+
+# TMDB API (для постеров и информации)
+tmdb:
+  api_key: ""  # Можно получить бесплатно на https://www.themoviedb.org/settings/api
+  language: ru-RU

@@ -3,7 +3,7 @@
 
   var Defined = {
     api: 'lampac',
-    localhost: 'http://z01.online/',
+    localhost: 'http://YOUR_SERVER_IP:9876/',
     apn: ''
   };
 

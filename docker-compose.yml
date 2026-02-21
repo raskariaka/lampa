@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  lampac:
+    image: dimagol/lampac:latest
+    container_name: lampac
+    restart: unless-stopped
+    ports:
+      - "9876:8080"
+    volumes:
+      - ./lampac-data:/app/data
+    environment:
+      - LAMPAC_PORT=8080
+      - LAMPAC_CACHE=true
+      - LAMPAC_CACHE_TTL=3600
+    networks:
+      - lampac-network
+
+networks:
+  lampac-network:
+    driver: bridge
